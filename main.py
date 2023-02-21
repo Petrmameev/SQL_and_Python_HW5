@@ -46,13 +46,31 @@ def add_phone(conn, client_id, number):
     print(cur.fetchall())
 
 
-def change_client(conn, client_id, name=None, surname=None, e_mail=None):
-    conn.execute("""
+def change_client(conn, client_id, name=None, surname=None, e_mail=None, number=None):
+    if name != None:
+        conn.execute("""
         UPDATE Client
-        SET name=%s, surname=%s, e_mail=%s
+        SET name=%s
         WHERE client_id=%s
-        RETURNING client_id, name, surname, e_mail;
-        """, (name, surname, e_mail, client_id))
+        """, (name, client_id))
+    if surname != None:
+        conn.execute("""
+        UPDATE Client
+        SET surname=%s
+        WHERE client_id=%s
+        """, (surname, client_id))
+    if e_mail != None:
+        conn.execute("""
+        UPDATE Client
+        SET e_mail=%s
+        WHERE client_id=%s
+        """, (e_mail, client_id))
+    if number != None:
+        conn.execute("""
+        UPDATE Phone
+        SET number=%s
+        WHERE client_id=%s
+        """, (number, client_id))
 
 
 def delete_phone(conn, client_id):
@@ -75,30 +93,51 @@ def delete_client(conn, client_id):
 
 
 def find_client(conn, name=None, surname=None, e_mail=None, number=None):
-    conn.execute("""
-        SELECT c.name, c.surname, c.e_mail, p.number FROM Client AS c
-        LEFT JOIN Phone AS p ON c.client_id = p.client_id
-        WHERE c.name=%s OR c.surname=%s OR c.e_mail=%s OR p.number=%s;
-        """, (name, surname, e_mail, number,))
+    if name != None:
+        conn.execute("""
+           SELECT c.name, c.surname, c.e_mail, p.number FROM Client AS c
+           LEFT JOIN Phone AS p ON c.client_id = p.client_id
+           WHERE c.name=%s;
+           """, (name,))
+    if surname != None:
+        conn.execute("""
+            SELECT c.name, c.surname, c.e_mail, p.number FROM Client AS c
+            LEFT JOIN Phone AS p ON c.client_id = p.client_id
+            WHERE c.surname=%s;
+           """, (surname,))
+    if e_mail != None:
+        conn.execute("""
+            SELECT c.name, c.surname, c.e_mail, p.number FROM Client AS c
+            LEFT JOIN Phone AS p ON c.client_id = p.client_id
+            WHERE e_mail=%s;
+            """, (e_mail,))
+    if number != None:
+        conn.execute("""
+            SELECT c.name, c.surname, c.e_mail, p.number FROM Client AS c
+            LEFT JOIN Phone AS p ON c.client_id = p.client_id
+            WHERE number=%s;
+            """, (number,))
+
     return cur.fetchall()
 
 
-with psycopg2.connect(database="HW", user="postgres", password="880901w") as conn:
-    with conn.cursor() as cur:
-        create_db(conn)
-        add_client(cur, 'Petr', 'Mameev', 'petr-mameev@mail.ru')
-        add_client(cur, 'Andrey', 'Bobrov', 'bobr@mail.ru')
-        conn.commit()
-        add_phone(cur, '1', '89139139132')
-        add_phone(cur, '1', '89139139133')
-        add_phone(cur, '2', '89139133333')
-        conn.commit()
-        change_client(cur, '1', 'Andrey', 'Bobrov2', 'bobbi@mail.ru')
-        conn.commit()
-        delete_phone(cur, '1')
-        conn.commit()
-        delete_client(cur, '1')
-        conn.commit()
-        print(find_client(cur, '', 'Bobrov'))
+if __name__ == "__main__":
+    with psycopg2.connect(database="HW", user="postgres", password="880901w") as conn:
+        with conn.cursor() as cur:
+            create_db(conn)
+            add_client(cur, 'Petr', 'Mameev', 'petr-mameev@mail.ru')
+            add_client(cur, 'Andrey', 'Bobrov', 'bobr@mail.ru')
+            conn.commit()
+            add_phone(cur, '1', '89139139132')
+            add_phone(cur, '1', '89139139133')
+            add_phone(cur, '2', '89139133333')
+            conn.commit()
+            change_client(cur, '2', name='Vasiliy', surname='Zaycev', number=9999999)
+            conn.commit()
+            delete_phone(cur, '1')
+            conn.commit()
+            delete_client(cur, '1')
+            conn.commit()
+            print(find_client(cur, name='Vasiliy', surname='Zaycev'))
 
 conn.close()
